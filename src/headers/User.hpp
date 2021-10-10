@@ -1,9 +1,7 @@
 #ifndef USER_HPP
 #define USER_HPP
 
-#include<iostream>
 using namespace std;
-
 class User{
     private:
         string _name;
@@ -12,11 +10,11 @@ class User{
     public:
         User();
         string const getName();
-        void setName(string name);
+        void setName(const string name);
         int const getAccountNumber();
-        void setAccountNumber(int accountNumber);
+        void setAccountNumber(const int accountNumber);
         int const getAccountBalance();
-        void setAccountBalance(int accountBalance);
+        void setAccountBalance(const int accountBalance);
         ~User();
 };
 

@@ -1,21 +1,23 @@
-// #ifndef TRANSACTION_HPP
-//     #define TRANSACTION_HPP
-//     #include<iostream>
-//     using namespace std;
+#ifndef TRANSACTION_HPP
+#define TRANSACTION_HPP
 
-//     class User{
-//         private:
-//             string _name;
-//             int _accountNumber;  //for the sake of simplicity defining account number as interger.
-//             int _accountBalance;    //for the sake of simplicity defining balance as integer
-//         public:
-//             User();
-//             string const getName();
-//             void setName(string name);
-//             int const getAccountNumber();
-//             void setAccountNumber(int accountNumber);
-//             int const getAccountBalance();
-//             void setAccountBalance(int accountBalance);
-//             ~User();
-//     };
-// #endif
+class Transaction{
+    private:
+        char _transType;
+        int _accountNumber;
+        int _amount;
+        int _timest;
+    public:
+        Transaction();
+        const int getTimestamp();
+        void setTimestamp(const int timestamp);
+        const int getAccountNumber();
+        void setAccountNumber(const int accountNumber);
+        const char getTransactionType();
+        void setTransactionType(const char transType);
+        const int getAmount();
+        void setAmount(const int amount);
+        ~Transaction();
+};
+
+#endif

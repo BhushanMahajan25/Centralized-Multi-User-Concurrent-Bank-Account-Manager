@@ -1,63 +1,16 @@
-#include "../headers/fileHandling.hpp"
-#include<algorithm>
-#include<functional>
-
-using namespace std;
-
-class Transaction{
-    private:
-        char _transType;
-        int _accountNumber;
-        int _amount;
-        int _timest;
-    public:
-        Transaction(){}
-        // timestamp?
-        const int getTimestamp(){
-            return this->_timest;
-        }
-        void setTimestamp(const int timestamp){
-            _timest = timestamp;
-        }
-
-        // account number, transaction type(withdrawal/deposit), amount (space separated)
-        const int getAccountNumber(){
-            return this->_accountNumber;
-        }
-        void setAccountNumber(const int accountNumber){
-            this->_accountNumber = accountNumber;
-        }
-
-        const char getTransactionType(){
-            return this->_transType;
-        }
-        void setTransactionType(const char transType){
-            this->_transType = transType;
-        }
-
-        const int getAmount(){
-            return this->_amount;
-        }
-        void setAmount(const int amount){
-            this->_amount = amount;
-        }
-
-        ~Transaction(){}
-};
+#include "../headers/common.hpp"
+#include "../headers/Transaction.hpp"
+#include "../headers/User.hpp"
+//#include<algorithm>
+//#include<functional>
 
 
-bool is_file_empty(std::fstream& pFile){
+bool is_file_empty(ifstream& pFile){
     //https://stackoverflow.com/questions/2390912/checking-for-an-empty-file-in-c
-    return pFile.peek() == std::ifstream::traits_type::eof();
+    return pFile.peek() == ifstream::traits_type::eof();
 }
 
-//overloading the function!
-bool is_file_empty(std::ifstream& pFile){
-    //https://stackoverflow.com/questions/2390912/checking-for-an-empty-file-in-c
-    return pFile.peek() == std::ifstream::traits_type::eof();
-}
-
-void readRecords(fstream &recordsFile, vector<User> &userVec){
+void readRecords(ifstream &recordsFile, vector<User> &userVec){
     string currLine;
     do{ 
         User* userObj = new User();
@@ -117,8 +70,8 @@ void readTransactions(ifstream &transFile, vector<Transaction> &transVec){
     }
 }
 
-int openRecordsFile(fstream& recordsFile, string recoFileName){
-    recordsFile.open(recoFileName, ios::in | ios::out);
+int openRecordsFile(ifstream& recordsFile, string recoFileName){
+    recordsFile.open(recoFileName, ios::in);
     if(recordsFile.is_open() && !is_file_empty(recordsFile)){
         cout<<"Printitng records!!"<<endl;
         return 1;
@@ -149,43 +102,12 @@ int isUser(int accNum, vector<User> &userVec){
     return -1;
 }
 
-void updateRecordFile(int currentBalance, int latestBal, int accNum, User userObj,fstream &recordsFile){
-    cout<<"inside updateRecordFile()"<<endl;
-    recordsFile.clear();
-    recordsFile.seekg(0, ios::beg);
-
-    string line;
-    size_t lenCurrBal = to_string(currentBalance).length();
-    cout<<endl<<"length of curr bal:: "<<lenCurrBal<<endl;
-
-
-    //I am having trouble in this while loop
-    while (getline(recordsFile, line)){
-        if(!line.empty()){
-            //recordsFile>>currWord;
-            //cout<<"current line:: "<<line<<endl;
-            size_t pos = line.find(to_string(accNum));
-            if(pos != string::npos){
-                cout<<"outer string::npos:: "<<string::npos<<endl;
-                cout<<"outer found pos:: "<<pos<<endl<<endl;
-                pos = line.find(to_string(currentBalance));
-                size_t tellPos = recordsFile.tellp();
-                recordsFile.seekp(tellPos - 6);
-                cout<<"before tellPos:: "<<tellPos<<endl;
-                cout<<"after tellPos:: "<<recordsFile.tellp()<<endl;
-                string lb = std::to_string(latestBal);
-                const char* lbPtr = lb.c_str();
-                recordsFile.write(lbPtr, lb.length());
-            }
-        }
-    }
-}
-
-void updateRecords(fstream &recordsFile, vector<User> &userVec, vector<Transaction> &transVec){
+void updateRecords(ifstream &recordsFile, vector<User> &userVec, vector<Transaction> &transVec){
     for(Transaction t : transVec){
         int userIdx = isUser(t.getAccountNumber(), userVec);
         if(userIdx == -1){
             cout<<endl<<endl<<"user with account number:: "<<t.getAccountNumber()<<" not found!!"<<endl;
+            //skip the current transaction and move onto the next transaction
         }
         else{
             User userObj = userVec.at(userIdx);
@@ -194,51 +116,49 @@ void updateRecords(fstream &recordsFile, vector<User> &userVec, vector<Transacti
             if(tolower(t.getTransactionType()) == 'w' && t.getAmount() <= userObj.getAccountBalance() && userObj.getAccountBalance() != 0){
                 int latestBal = userObj.getAccountBalance() - t.getAmount();
                 userObj.setAccountBalance(latestBal);
-                updateRecordFile(currentBalance, latestBal, t.getAccountNumber(), userObj,recordsFile);
             }
             else if(tolower(t.getTransactionType()) == 'd' && t.getAmount() > 0){
                 int latestBal = userObj.getAccountBalance() + t.getAmount();
                 userObj.setAccountBalance(latestBal);
-                updateRecordFile(currentBalance ,latestBal, t.getAccountNumber(),userObj,recordsFile);
             }
         }
     }
 }
 
-int main(){
+//int main(){
     
-    vector<User> userVec;
-    vector<Transaction> transVec;
-    string recoFileName = "../input-files/Records.txt";
-    string transFileName = "../input-files/Transactions.txt";
+    // vector<User> userVec;
+    // vector<Transaction> transVec;
+    // string recoFileName = "input-files/Records.txt";
+    // string transFileName = "input-files/Transactions.txt";
 
-    fstream recordsFile;
-    ifstream transFile;
-    ofstream newRecordsFile;
+    // ifstream recordsFile;
+    // ifstream transFile;
+    // ofstream newRecordsFile;
     
-    //IMP: in Records.txt there must not be any empty line!!
-    if(openRecordsFile(recordsFile, recoFileName) == 1){
-        cout<<"records file opend!!"<<endl;
-        readRecords(recordsFile, userVec);
-    }
-    else{
-        cout<<"exting the program. First load the records file!";
-        exit(1);
-    }
+    // //IMP: in Records.txt there must not be any empty line!!
+    // if(openRecordsFile(recordsFile, recoFileName) == 1){
+    //     cout<<"records file opend!!"<<endl;
+    //     readRecords(recordsFile, userVec);
+    // }
+    // else{
+    //     cout<<"exting the program. First load the records file!"<<endl;
+    //     exit(1);
+    // }
 
-    if(openTransactionFile(transFile, transFileName) == 1){
-        cout<<"transaction file opend!!"<<endl;
-        readTransactions(transFile, transVec);
-        updateRecords(recordsFile, userVec, transVec);
-    }
-    else{
-        cout<<"exting the program. First load the transactions file!";
-        exit(1);
-    }
+    // if(openTransactionFile(transFile, transFileName) == 1){
+    //     cout<<"transaction file opend!!"<<endl;
+    //     readTransactions(transFile, transVec);
+    //     //updateRecords(recordsFile, userVec, transVec); 
+    // }
+    // else{
+    //     cout<<"exting the program. First load the transactions file!"<<endl;
+    //     exit(1);
+    // }
 
     //updateRecords(recordsFile, userVec, transVec);
 
-    recordsFile.close();
+    //recordsFile.close();
 
-    return 0;
-}
+    //return 0;
+//}
