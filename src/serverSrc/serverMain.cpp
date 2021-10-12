@@ -3,21 +3,31 @@
 #include "../headers/User.hpp"
 #include "../headers/clientSocketQueue.hpp"
 #include<pthread.h>
+#include<sstream>
 
+#define THREAD_POOL_SIZE 32
 
-#define SERVER_PORT 8080  // macro for server port. get port from terminal args and delete this
-#define SERVER_IP "10.0.0.237" // macro for serverip. get ip from terminal args and delete this
-#define THREAD_POOL_SIZE 20
-
-int serverFd, clientSocketFd, threadPoolSize;
+int serverFd, clientSocketFd;
+vector<User> userVec;
 
 pthread_t threadPool[THREAD_POOL_SIZE];
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cnd = PTHREAD_COND_INITIALIZER;
 
-void handleReadWriteConnection(void*);
+void handleReadWriteConnection(int);
 void* threadFunction(void*);
+void* addInterest(void*);
 
+void* addInterest(void* arg){
+	float interestRate = 1.1f;
+	while(true){
+		sleep(5);
+		cout<<"adding interest rate to all accounts";
+		for(User userObj : userVec){
+			userObj.setAccountBalance(userObj.getAccountBalance()*interestRate);
+		}
+	}
+}
 
 //https://www.youtube.com/watch?v=P6Z5K8zmEmc&list=PL9IEJIKnBJjFZxuqyJ9JqVYmuFZHr7CFM&index=7
 void* threadFunction(void* arg){
@@ -30,20 +40,19 @@ void* threadFunction(void* arg){
 			pClient = dequeue();
 		}
 		pthread_mutex_unlock(&mx);
-		
-		//if(pClient != NULL){
-			handleReadWriteConnection(pClient);
-		//}
+		handleReadWriteConnection(*pClient);
+		close(*pClient);
 	}
 	return NULL;
 }
 
-void handleReadWriteConnection(void* pClientSocketFd){
-	int clientSocketFd = *((int*)pClientSocketFd);
-	free(pClientSocketFd);
-	int counter = 1;
+void handleReadWriteConnection(int pClientSocketFd){
+	int clientSocketFd = pClientSocketFd;
 	while(true){
 		int valread = 0;
+		int accountNumber;
+		string transactionType;
+		float amount = 0.0f;
 		cout<<"inside while server"<<endl;
 		/*
 		one way to receive strings over socket: https://stackoverflow.com/questions/31900493/sending-a-string-over-a-network-using-sockets-in-c
@@ -52,9 +61,53 @@ void handleReadWriteConnection(void* pClientSocketFd){
 		valread = read(clientSocketFd, (void*) &buffer, 1024);
 		if(valread > 0){
 			cout<<"valread:: "<<valread<<" "<<"buffer from client:: "<<buffer<<endl;
-			string ack = "ACK:: got msg::" + to_string(counter) + "::"+buffer;
-			send(clientSocketFd, (void*) &ack, ack.length(), 0);
-			counter++;
+			istringstream ss(buffer);
+			string word;
+			ss>>word;
+			accountNumber = stoi(word);
+			ss>>word;
+			transactionType = word;
+			ss>>word;
+			amount = stof(word);
+
+			string buff;
+			int userIdx = isUser(accountNumber, userVec);
+			if(userIdx == -1){
+				buff = "ERROR:: User with account number:: " + to_string(accountNumber) + " not found!!";
+			}
+			else{
+				pthread_mutex_lock(&mx);
+				User userObj = userVec.at(userIdx);
+				cout<<"user "<<userObj.getName()<<" with account number:: "<<accountNumber<<" found!!"<<endl;
+				int latestBal = 0;
+				if(transactionType == "w"){
+					if(amount == 0.0f){
+						buff = "ERROR:: Transaction amount cannot be zero!";
+					}else if(userObj.getAccountBalance() - amount < 0.0f){
+						buff = "ERROR:: Insufficient balance!";
+					}else{
+						latestBal = userObj.getAccountBalance() - amount;
+						userObj.setAccountBalance(latestBal);
+						userVec.at(userIdx) = userObj;
+						buff = "SUCCESS:: Withdraw:: Latest balance of account "+to_string(accountNumber)+" :: "+to_string(latestBal);
+					}
+				}
+				else if(transactionType == "d"){
+					if(amount == 0.0f){
+						buff = "ERROR:: transaction amount cannot be zero!";
+					}else{
+						latestBal = userObj.getAccountBalance() + amount;
+						userObj.setAccountBalance(latestBal);
+						userVec.at(userIdx) = userObj;
+						buff = "SUCCESS:: Deposit:: Latest balance of account "+to_string(accountNumber)+" :: "+to_string(latestBal);
+					}
+				}else{
+					buff = "ERROR:: Invalid transaction type operation!!";
+				}
+				cout<<buff<<endl;
+				send(clientSocketFd, buff.c_str(), buff.size(),0);
+				pthread_mutex_unlock(&mx);
+			}
 		} else{
 			cout<<"valread <=0....closing server and client now"<<endl;
 			close(clientSocketFd);
@@ -73,7 +126,6 @@ int main(int argc, char **argv) {
 
 	/* file handling variables*/
 	string fileName = argv[3];	//"../input-files/Records.txt";
-	vector<User> userVec;
     vector<Transaction> transVec;
     string recoFileName = "input-files/Records.txt";
 
@@ -99,7 +151,7 @@ int main(int argc, char **argv) {
     }
     else{
         cout<<"exiting the program. First load the records file!"<<endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
 	//create threads in thread_pool and reuse them for future client connections
@@ -110,7 +162,7 @@ int main(int argc, char **argv) {
 	// create socket (IPv4, stream-based, protocol set to TCP)
 	if((serverFd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		cout<<"server failed to create the listening socket"<<endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	// set socket to use the address passed in terminal args
@@ -122,22 +174,21 @@ int main(int argc, char **argv) {
 
 	// configure server socket address structure (init to zero, IPv4,
 	// network byte order for port and address)
-	// bzero(&server, sizeof(server));
+	bzero(&server, sizeof(server));
 	server.sin_family = AF_INET;
-	//server.sin_addr.s_addr = htonl(INADDR_ANY);
 	server.sin_addr.s_addr = inet_addr(serverIP); //https://stackoverflow.com/questions/15673846/how-to-give-to-a-client-specific-ip-address-in-c
 	server.sin_port = htons(serverPort); //use port specified in terminal args
 
 	// bind the socket
 	if(::bind(serverFd, (struct sockaddr*) &server, sizeof(server)) < 0){ //c++11
 		cout<<"server failed to bind"<<endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	// listen on the socket for up to some maximum pending connections
 	if(listen(serverFd, maxPendingConnections) < 0){
 		cout<<"server failed to listen"<<endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 	} else{
 		cout<<"server listening for a connection on port:: "<<serverPort<<endl;
 	}
@@ -151,8 +202,6 @@ int main(int argc, char **argv) {
 			cout<<"server accept failed"<<endl;
 		} else{
 			cout<<"server accepted a client!"<<endl;
-			/*pthread_t t;
-			pthread_create(&t, NULL, handleReadWriteConnection,pClient);*/
 
 			//using deque STL to store the connection so that a thread from thread pool can find it.
 			int* pClient = new int;
@@ -163,8 +212,7 @@ int main(int argc, char **argv) {
 			pthread_mutex_unlock(&mx);
 		}
 	}
-	// Close the socket and return 
-	close(clientSocketFd);
+	// Close the socket
 	close(serverFd);
 	return 0;
 }

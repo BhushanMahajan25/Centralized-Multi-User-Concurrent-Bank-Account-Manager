@@ -1,29 +1,26 @@
 #include "../headers/common.hpp"
 #include "../headers/Transaction.hpp"
 
-#define SERVER_ADDR "10.0.0.237"
-#define SERVER_PORT 8080
+void sendTransactionsToServer(int&, vector<Transaction>&);
 
-void testFunction(int, vector<Transaction>&);
-
-void testFunction(int clientFd, vector<Transaction>& transVec){
+void sendTransactionsToServer(int& clientFd, vector<Transaction>& transVec){
 	cout<<"CLIENT:: sending msg"<<endl<<endl;
 	for(Transaction txn : transVec){
-		string message = to_string(txn.getAccountNumber()) + txn.getTransactionType() + to_string(txn.getAmount());
-		cout<<"message:: "<<message<<endl;
-		send(clientFd, (void*) &message, message.length(), 0); 
+		string message = to_string(txn.getAccountNumber()) + " " + txn.getTransactionType() + " " + to_string(txn.getAmount());
+		//cout<<"message:: "<<message<<endl;
+		send(clientFd, message.c_str(), message.size(), 0); 
 
-		char buffer[1024] = {0};
+		char buffer[4096] = {0};
 		int valread = 0;
-		valread = read(clientFd, (void*) &buffer, 1024);
+		valread = recv(clientFd, (void*) &buffer, sizeof(buffer),0);
 		if(valread > 0){
 			cout<<"valread"<<valread<<" "<<"buffer from server:: "<<buffer<<endl;
 		} else{
-			cout<<"valread <=0....closing client now"<<endl;
-			close(clientFd);
+			cout<<"valread <= 0"<<endl;
 		}
 		sleep(3);
 	}
+	close(clientFd);
 }
 
 int main(int argc, char **argv) {
@@ -79,7 +76,7 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	} else {
 		cout<<"client to connect to "<<serverAddress<<" : "<<serverPort<<endl;
-		testFunction(clientFd, transVec);
+		sendTransactionsToServer(clientFd, transVec);
 	}
 
 	// Close the socket and return 0

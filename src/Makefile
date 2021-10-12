@@ -9,10 +9,10 @@ CFLAGS = -c --std=c++11
 
 OBJDIR = obj
 
-all : server client
+compile : server client
 
 server : $(OBJDIR)/Transaction.o $(OBJDIR)/User.o $(OBJDIR)/fileHandling.o $(OBJDIR)/clientSocketQueue.o $(OBJDIR)/serverMain.o
-	$(CC) $(OBJDIR)/Transaction.o $(OBJDIR)/User.o $(OBJDIR)/fileHandling.o $(OBJDIR)/clientSocketQueue.o $(OBJDIR)/serverMain.o -o server
+	$(CC) $(OBJDIR)/Transaction.o $(OBJDIR)/User.o $(OBJDIR)/fileHandling.o $(OBJDIR)/clientSocketQueue.o $(OBJDIR)/serverMain.o -o server -lpthread
 
 client : $(OBJDIR)/Transaction.o $(OBJDIR)/User.o $(OBJDIR)/fileHandling.o $(OBJDIR)/clientMain.o
 	$(CC) $(OBJDIR)/Transaction.o $(OBJDIR)/User.o $(OBJDIR)/fileHandling.o $(OBJDIR)/clientMain.o -o client

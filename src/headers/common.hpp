@@ -8,8 +8,9 @@
 //#include<netinet/in.h>
 #include<arpa/inet.h>
 //#include <stdlib.h>
-#include <string>
-#include <unistd.h>
+#include<string>
+#include<algorithm>
+#include<unistd.h>
 
 /*fileHandling.cpp headers*/
 #include<fstream>
@@ -28,6 +29,8 @@ void readRecords(ifstream&, vector<User>&);
 
 int openTransactionFile(ifstream&, string);
 void readTransactions(ifstream&, vector<Transaction>&);
+
+int isUser(int, vector<User>&);
 
 void enqueue(int* pClient);
 int* dequeue();

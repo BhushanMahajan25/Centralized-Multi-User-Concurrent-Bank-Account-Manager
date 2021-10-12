@@ -21,10 +21,10 @@ void User::setAccountNumber(const int accountNumber){
     this->_accountNumber = accountNumber;
 }
 
-int const User::getAccountBalance(){
+float const User::getAccountBalance(){
     return this->_accountBalance;
 }
-void User::setAccountBalance(const int accountBalance){
+void User::setAccountBalance(const float accountBalance){
    this->_accountBalance = accountBalance;
 }
 
