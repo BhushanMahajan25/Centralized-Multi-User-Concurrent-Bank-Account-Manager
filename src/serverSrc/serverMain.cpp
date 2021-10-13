@@ -11,6 +11,7 @@ vector<User> userVec;
 
 pthread_t threadPool[THREAD_POOL_SIZE];
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
+// vector<pthread_mutex_t> mx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cnd = PTHREAD_COND_INITIALIZER;
 
 void handleReadWriteConnection(int);
@@ -19,7 +20,7 @@ void* addInterest(void*);
 string updateRecords(int, float, string);
 
 void* addInterest(void* arg){
-	float interestRate = 1.5f;
+	float interestRate = 0.05f;
 	string buff;
 	while(true){
 		sleep(2);
@@ -82,14 +83,18 @@ string updateRecords(int userIdx, float amount, string transactionType){
 			float temp = (*userObj).getAccountBalance()*amount;
 			cout<<"temp:: "<<temp<<endl;
 			(*userObj).setAccountBalance(temp);
+			cout<<"updated information:: "<<endl;
+			cout<<"account number:: "<<(*userObj).getAccountNumber()<<endl;
+			cout<<"user name:: "<<(*userObj).getName()<<endl;
+			cout<<"account balance:: "<<(*userObj).getAccountBalance()<<endl;
 		}
-		for(int i = 0; i < userVec.size(); i++){
-			User userObj = userVec.at(i);
-			float temp = userObj.getAccountBalance()*amount;
-			cout<<"temp:: "<<temp<<endl;
-			userObj.setAccountBalance(temp);
-			userVec.at(i) = userObj;
-		}
+		// for(int i = 0; i < userVec.size(); i++){
+		// 	User userObj = userVec.at(i);
+		// 	float temp = userObj.getAccountBalance()*amount;
+		// 	cout<<"temp:: "<<temp<<endl;
+		// 	userObj.setAccountBalance(temp);
+		// 	userVec.at(i) = userObj;
+		// }
 		buff = "SUCCESS:: Interest Deposit:: Added interest amount " + to_string(amount) + "to each user's account";
 	}else{
 		buff = "ERROR:: Invalid transaction type operation!!";
@@ -221,8 +226,8 @@ int main(int argc, char **argv) {
 	// get the size client's address struct
 	clientAddrLen = sizeof(client);
 
-	// pthread_t ir;
-	// pthread_create(&ir, NULL, addInterest, NULL);
+	pthread_t ir;
+	pthread_create(&ir, NULL, addInterest, NULL);
 
 	while(true){
 		// accept a new client
