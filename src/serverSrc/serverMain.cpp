@@ -1,7 +1,6 @@
 #include "../headers/common.hpp"
 #include "../headers/Transaction.hpp"
 #include "../headers/User.hpp"
-#include "../headers/clientSocketQueue.hpp"
 #include<pthread.h>
 #include<sstream>
 
@@ -17,16 +16,21 @@ pthread_cond_t cnd = PTHREAD_COND_INITIALIZER;
 void handleReadWriteConnection(int);
 void* threadFunction(void*);
 void* addInterest(void*);
+string updateRecords(int, float, string);
 
 void* addInterest(void* arg){
-	float interestRate = 1.1f;
+	float interestRate = 1.5f;
+	string buff;
 	while(true){
-		sleep(5);
-		cout<<"adding interest rate to all accounts";
-		for(User userObj : userVec){
-			userObj.setAccountBalance(userObj.getAccountBalance()*interestRate);
-		}
+		sleep(2);
+		cout<<"adding interest rate to all accounts"<<endl;
+		pthread_mutex_lock(&mx);
+		buff = updateRecords(0, interestRate, "i");
+		cout<<buff<<endl;
+		send(clientSocketFd, buff.c_str(), buff.size(),0);
+		pthread_mutex_unlock(&mx);
 	}
+	return NULL;
 }
 
 //https://www.youtube.com/watch?v=P6Z5K8zmEmc&list=PL9IEJIKnBJjFZxuqyJ9JqVYmuFZHr7CFM&index=7
@@ -44,6 +48,53 @@ void* threadFunction(void* arg){
 		close(*pClient);
 	}
 	return NULL;
+}
+
+string updateRecords(int userIdx, float amount, string transactionType){
+	string buff;
+	User userObj = userVec.at(userIdx);
+	if(transactionType != "i"){
+		cout<<"user "<<userObj.getName()<<" with account number:: "<<userObj.getAccountNumber()<<" found!!"<<endl;
+	}
+	float latestBal = 0.0f;
+	if(transactionType == "w"){
+		if(amount == 0.0f){
+			buff = "ERROR:: Transaction amount cannot be zero!";
+		}else if(userObj.getAccountBalance() - amount < 0.0f){
+			buff = "ERROR:: Insufficient balance!";
+		}else{
+			latestBal = userObj.getAccountBalance() - amount;
+			userObj.setAccountBalance(latestBal);
+			userVec.at(userIdx) = userObj;
+			buff = "SUCCESS:: Withdraw:: Latest balance of account "+to_string(userObj.getAccountNumber())+" :: "+to_string(latestBal);
+		}
+	}else if(transactionType == "d"){
+		if(amount == 0.0f){
+			buff = "ERROR:: transaction amount cannot be zero!";
+		}else{
+			latestBal = userObj.getAccountBalance() + amount;
+			userObj.setAccountBalance(latestBal);
+			userVec.at(userIdx) = userObj;
+			buff = "SUCCESS:: Deposit:: Latest balance of account "+to_string(userObj.getAccountNumber())+" :: "+to_string(latestBal);
+		}
+	}else if(transactionType == "i"){
+		for(auto userObj = userVec.begin(); userObj != userVec.end(); userObj++){
+			float temp = (*userObj).getAccountBalance()*amount;
+			cout<<"temp:: "<<temp<<endl;
+			(*userObj).setAccountBalance(temp);
+		}
+		for(int i = 0; i < userVec.size(); i++){
+			User userObj = userVec.at(i);
+			float temp = userObj.getAccountBalance()*amount;
+			cout<<"temp:: "<<temp<<endl;
+			userObj.setAccountBalance(temp);
+			userVec.at(i) = userObj;
+		}
+		buff = "SUCCESS:: Interest Deposit:: Added interest amount " + to_string(amount) + "to each user's account";
+	}else{
+		buff = "ERROR:: Invalid transaction type operation!!";
+	}
+	return buff;
 }
 
 void handleReadWriteConnection(int pClientSocketFd){
@@ -77,33 +128,7 @@ void handleReadWriteConnection(int pClientSocketFd){
 			}
 			else{
 				pthread_mutex_lock(&mx);
-				User userObj = userVec.at(userIdx);
-				cout<<"user "<<userObj.getName()<<" with account number:: "<<accountNumber<<" found!!"<<endl;
-				int latestBal = 0;
-				if(transactionType == "w"){
-					if(amount == 0.0f){
-						buff = "ERROR:: Transaction amount cannot be zero!";
-					}else if(userObj.getAccountBalance() - amount < 0.0f){
-						buff = "ERROR:: Insufficient balance!";
-					}else{
-						latestBal = userObj.getAccountBalance() - amount;
-						userObj.setAccountBalance(latestBal);
-						userVec.at(userIdx) = userObj;
-						buff = "SUCCESS:: Withdraw:: Latest balance of account "+to_string(accountNumber)+" :: "+to_string(latestBal);
-					}
-				}
-				else if(transactionType == "d"){
-					if(amount == 0.0f){
-						buff = "ERROR:: transaction amount cannot be zero!";
-					}else{
-						latestBal = userObj.getAccountBalance() + amount;
-						userObj.setAccountBalance(latestBal);
-						userVec.at(userIdx) = userObj;
-						buff = "SUCCESS:: Deposit:: Latest balance of account "+to_string(accountNumber)+" :: "+to_string(latestBal);
-					}
-				}else{
-					buff = "ERROR:: Invalid transaction type operation!!";
-				}
+				buff = updateRecords(userIdx, amount, transactionType); 
 				cout<<buff<<endl;
 				send(clientSocketFd, buff.c_str(), buff.size(),0);
 				pthread_mutex_unlock(&mx);
@@ -195,6 +220,9 @@ int main(int argc, char **argv) {
 
 	// get the size client's address struct
 	clientAddrLen = sizeof(client);
+
+	// pthread_t ir;
+	// pthread_create(&ir, NULL, addInterest, NULL);
 
 	while(true){
 		// accept a new client
