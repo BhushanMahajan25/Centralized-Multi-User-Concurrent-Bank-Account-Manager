@@ -1,3 +1,7 @@
+/** @file common.hpp
+ *  @brief This file contains common headers and functions used by multiple cpp files
+*/
+
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
@@ -24,10 +28,8 @@
 
 using namespace std;
 
-int openRecordsFile(ifstream&, string);
+int openFile(ifstream&, string);
 void readRecords(ifstream&, vector<User>&);
-
-int openTransactionFile(ifstream&, string);
 void readTransactions(ifstream&, vector<Transaction>&);
 
 int isUser(int, vector<User>&);
