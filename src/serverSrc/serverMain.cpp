@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
 	/*socket variables*/
 	int serverPort = stoi(argv[2]);
 	int setReuseAddr = 1; // ON == 1  
-	int maxPendingConnections = 1;
+	int maxPendingConnections = THREAD_POOL_SIZE;
 	char* serverIP = argv[1];
 
 	struct sockaddr_in server;

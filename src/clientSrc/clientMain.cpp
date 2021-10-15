@@ -105,11 +105,11 @@ int main(int argc, char **argv) {
 		close(clientFd);
 		exit(EXIT_FAILURE);
 	} else {
-		cout<<"SUCCESS:: Client to connect to "<<serverAddress<<" : "<<serverPort<<endl;
+		cout<<"SUCCESS:: Client connected to "<<serverAddress<<" : "<<serverPort<<endl;
 		meanExecTime = sendTransactionsToServer(clientFd, transVec);
 	}
 
-	// writeTimestamp(meanExecTime, transVec.size());
+	writeTimestamp(meanExecTime, transVec.size());
 
 	// Close the socket and return 0
 	close(clientFd);
