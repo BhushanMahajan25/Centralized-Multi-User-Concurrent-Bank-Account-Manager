@@ -34,3 +34,5 @@ In directory src/
     b. Make sure you change **SERVER IP ADDRESS** and **PORT** as per your requirements.
 
 When the server and clients are running, you can see operation output on terminal window. Also, you can check the log of average time of transactions executions taken by each client in the directory *[src/logs/](https://github.com/BhushanMahajan25/Centralized-Multi-User-Concurrent-Bank-Account-Manager/tree/main/src/logs)*
+
+[Implementation.md](https://github.com/BhushanMahajan25/Centralized-Multi-User-Concurrent-Bank-Account-Manager/blob/main/Implementation.md) explains the working of multi-threading in detail.
