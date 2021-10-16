@@ -16,12 +16,12 @@ void writeTimestamp(float &, int);
 void writeTimestamp(float &meanExecTime, int totalSize){
 	//commented as the below code is used for testing scalability
 	ofstream file1;
-	file1.open("logs/file.txt",ios::app);
+	file1.open("logs/transaction-execution-time.txt",ios::app);
 	if(!file1.is_open()){
 		cout << endl << "log file could not be opened" <<endl;
 		exit(0);
 	}
-	file1  << "average time of execution of all transactions " + to_string(meanExecTime/totalSize) << "\n";
+	file1  << "average time of execution of all transactions for a client " + to_string(meanExecTime/totalSize) << " microseconds\n";
 	file1.close();
 }
 
@@ -51,7 +51,7 @@ float sendTransactionsToServer(int& clientFd, vector<Transaction>& transVec){
 		}
 		auto duration = duration_cast<microseconds>(stop - start);
 		avgExecTime += duration.count();
-		cout << "Time taken by the function:: "<< duration.count() << " microseconds" << endl;
+		cout << "Time taken by the transaction:: "<< duration.count() << " microseconds" << endl;
 		sleep(2);
 	}
 	close(clientFd);
